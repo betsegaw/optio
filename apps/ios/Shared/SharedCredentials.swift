@@ -13,7 +13,7 @@ import Security
 /// and exist for callers that only ever want "the current one" (widgets' default,
 /// intents). Multi-server surfaces go through `ServerRegistry` directly.
 public enum SharedCredentials {
-    public static let appGroup = "group.dev.optio.ios"
+    public static let appGroup = "group.com.betsegaw.optio.ios"
     // The access group must include the signing team's AppIdentifierPrefix.
     // Xcode expands this Info.plist value for both the app and its extension.
     public static var keychainGroup: String? {
