@@ -629,6 +629,21 @@ describe("shouldEscalateNoPr", () => {
     expect(shouldEscalateNoPr({ ...defaults, hasRepoUrl: false })).toBe(false);
   });
 
+  it("does not escalate when the agent declared no PR is needed", () => {
+    const summary =
+      "I answered the question on the issue.\n\nOPTIO_NO_PR: question answered, no change requested";
+    expect(shouldEscalateNoPr({ ...defaults, summary })).toBe(false);
+  });
+
+  it("still escalates when the final message only mentions the marker", () => {
+    const summary = "I would have written OPTIO_NO_PR: here, but I didn't finish the change.";
+    expect(shouldEscalateNoPr({ ...defaults, summary })).toBe(true);
+  });
+
+  it("still escalates when the declared reason is empty", () => {
+    expect(shouldEscalateNoPr({ ...defaults, summary: "Done.\nOPTIO_NO_PR:   " })).toBe(true);
+  });
+
   it("does not escalate when detectedPrUrl is null", () => {
     // null is treated as falsy — same as undefined
     expect(shouldEscalateNoPr({ ...defaults, detectedPrUrl: null })).toBe(true);

@@ -1254,6 +1254,7 @@ async function finishTaskRun(input: FinishTaskRunInput): Promise<RunEnd> {
         isPlanningRun,
         hasRepoUrl: !!task.repoUrl,
         detectedPrUrl,
+        summary: result.summary,
       })
     ) {
       // Repo Task completed without opening a PR. Before escalating,
@@ -1300,7 +1301,12 @@ async function finishTaskRun(input: FinishTaskRunInput): Promise<RunEnd> {
         "agent_success",
         result.summary,
       );
-      log.info("Task completed");
+      const noPrReason = detectedPrUrl ? null : declaredNoPrReason(result.summary);
+      if (noPrReason) {
+        log.info({ noPrReason }, "Task completed without a PR, as the agent declared");
+      } else {
+        log.info("Task completed");
+      }
     }
   } else {
     // Before failing, check if a PR was actually created via the API.
@@ -1773,18 +1779,31 @@ export function classifyRunOutcome(opts: {
   return opts.success ? "success" : "failure";
 }
 
+/**
+ * The reason an agent gave for deliberately ending a Repo Task without a PR:
+ * a line `OPTIO_NO_PR: <reason>` in its final message (e.g. it only answered
+ * a question or asked one on the issue). Null when there is no such line.
+ */
+export function declaredNoPrReason(summary: string | undefined | null): string | null {
+  const match = summary?.match(/^\s*OPTIO_NO_PR:\s*(\S.*?)\s*$/m);
+  return match ? match[1] : null;
+}
+
 export function shouldEscalateNoPr(opts: {
   success: boolean;
   isReviewTask: boolean;
   isPlanningRun: boolean;
   hasRepoUrl: boolean;
   detectedPrUrl: string | undefined | null;
+  /** The agent's final message; a declared no-PR reason completes the task. */
+  summary?: string | null;
 }): boolean {
   if (!opts.success) return false;
   if (opts.isReviewTask) return false;
   if (opts.isPlanningRun) return false;
   if (!opts.hasRepoUrl) return false;
   if (opts.detectedPrUrl) return false;
+  if (declaredNoPrReason(opts.summary)) return false;
   return true;
 }
 
