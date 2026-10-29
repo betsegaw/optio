@@ -133,9 +133,7 @@ export async function pollPrs(): Promise<void> {
       const prData = await platform.getPullRequest(ri, prNumber).catch(() => null);
       if (!prData) continue;
 
-      const checkRuns = await platform.getCIChecks(ri, prData.headSha).catch(() => []);
       const reviewsData = await platform.getReviews(ri, prNumber).catch(() => []);
-      const checksStatus = determineCheckStatus(checkRuns);
       const reviewResult = determineReviewStatus(reviewsData);
       const reviewStatus = reviewResult.status;
       let reviewComments = reviewResult.comments;
@@ -153,20 +151,14 @@ export async function pollPrs(): Promise<void> {
         } catch {}
       }
 
-      // Conflicts override the raw checks status — once we've recorded
-      // conflicts, keep that label until mergeable flips back.
-      const effectiveChecksStatus =
-        task.prChecksStatus === "conflicts" && prData.mergeable === false
-          ? "conflicts"
-          : checksStatus;
-
-      // Write all PR fields in one update. The reconciler reads these
-      // from the snapshot to decide the next action.
+      // Write the PR fields the reconciler doesn't own. prChecksStatus and
+      // prReviewStatus are left to the reconciler: it compares the live PR
+      // with these stored values to detect a change (changes requested, CI
+      // starting to fail, conflicts) and then patches them. Writing them here
+      // first erased every such edge, so a review never resumed the agent.
       const updates: Record<string, unknown> = {
         prNumber,
         prState: prData.merged ? "merged" : prData.state,
-        prChecksStatus: effectiveChecksStatus,
-        prReviewStatus: reviewStatus,
         updatedAt: new Date(),
       };
       if (reviewComments) {
