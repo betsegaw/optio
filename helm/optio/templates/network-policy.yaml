@@ -11,7 +11,7 @@
 # ranges plus deployment-specific deniedEgressCidrs. DNS is limited to CoreDNS.
 {{- $denied := .Values.networkPolicy.deniedEgressCidrs | default list }}
 {{- $v4 := list "0.0.0.0/8" "10.0.0.0/8" "100.64.0.0/10" "127.0.0.0/8" "169.254.0.0/16" "172.16.0.0/12" "192.168.0.0/16" "224.0.0.0/4" "240.0.0.0/4" }}
-{{- $v6 := list "::/128" "::1/128" "::ffff:0:0/96" "64:ff9b::/96" "100::/64" "fc00::/7" "fe80::/10" "fec0::/10" "ff00::/8" }}
+{{- $v6 := list "::/128" "::1/128" "64:ff9b::/96" "100::/64" "fc00::/7" "fe80::/10" "fec0::/10" "ff00::/8" }}
 {{- range $denied }}
 {{- if contains ":" . }}{{ $v6 = append $v6 . }}{{ else }}{{ $v4 = append $v4 . }}{{ end }}
 {{- end }}
